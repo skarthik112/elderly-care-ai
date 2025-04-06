@@ -32,6 +32,10 @@ A smart assistant that monitors health, safety, and medication for elderly indiv
 
 2. Launch the app:
     streamlit run app.py
+   
+🌐 Web App URL
+🔗 https://elder-care-ai.streamlit.app/
+⚠️ Note: If the app doesn’t load immediately, give it a few moments. Streamlit apps hosted via Community Cloud might take time to wake up.
 
 🗂️ Folder Structure
 
