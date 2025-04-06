@@ -7,19 +7,30 @@ class HealthMonitorAgent:
         else:
             self.data = pd.read_csv(data)
 
-        # ✅ Add this line to ensure timestamp column is datetime
-        self.data['Timestamp'] = pd.to_datetime(self.data['Timestamp'])
+        if 'Timestamp' in self.data.columns:
+            self.data['Timestamp'] = pd.to_datetime(self.data['Timestamp'], errors='coerce')
+        else:
+            self.data['Timestamp'] = pd.NaT  # Create empty timestamp column if missing
 
     def check_vitals(self):
         alerts = []
+
         for _, row in self.data.iterrows():
-            if str(row['Alert Triggered (Yes/No)']).strip().lower() == 'yes':
-                msg = (
-                    f"[{row['Timestamp']}] - High Vitals Detected:\n"
-                    f"  → Heart Rate: {row['Heart Rate']} bpm\n"
-                    f"  → BP: {row['Blood Pressure']}\n"
-                    f"  → Glucose: {row['Glucose Levels']} mg/dL\n"
-                    f"  → SpO2: {row['Oxygen Saturation (SpO₂%)']}%\n"
-                )
-                alerts.append(msg)
+            alert_triggered = str(row.get('Alert Triggered (Yes/No)', '')).strip().lower() == 'yes'
+
+            if alert_triggered:
+                parts = [f"[{row.get('Timestamp', 'Unknown Time')}] - High Vitals Detected:"]
+                
+                if 'Heart Rate' in row:
+                    parts.append(f"  → Heart Rate: {row['Heart Rate']} bpm")
+                if 'Blood Pressure' in row:
+                    parts.append(f"  → BP: {row['Blood Pressure']}")
+                if 'Glucose Levels' in row:
+                    parts.append(f"  → Glucose: {row['Glucose Levels']} mg/dL")
+                if 'Oxygen Saturation (SpO₂%)' in row:
+                    parts.append(f"  → SpO2: {row['Oxygen Saturation (SpO₂%)']}%")
+                
+                alert_msg = "\n".join(parts)
+                alerts.append(alert_msg)
+
         return alerts
