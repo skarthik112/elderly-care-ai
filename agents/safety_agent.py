@@ -7,15 +7,14 @@ class SafetyAgent:
         else:
             self.data = pd.read_csv(data)
 
-
     def check_safety(self):
-        alerts = []
+        safety_alerts = []
         for _, row in self.data.iterrows():
-            if str(row['Fall Detected (Yes/No)']).strip().lower() == 'yes':
-                msg = (
-                    f"[{row['Timestamp']}] - Fall Detected!\n"
-                    f"  → Location: {row['Location']}\n"
-                    f"  → Inactivity: {row['Post-Fall Inactivity Duration (Seconds)']} seconds"
-                )
-                alerts.append(msg)
-        return alerts
+            fall_detected = row.get('Fall Detected', 'N/A')
+            smoke_detected = row.get('Smoke Detected', 'N/A')
+            unusual_activity = row.get('Unusual Activity', 'N/A')
+
+            alert_msg = f"Safety Alert: Fall: {fall_detected}, Smoke: {smoke_detected}, Unusual Activity: {unusual_activity}"
+            safety_alerts.append(alert_msg)
+
+        return safety_alerts
