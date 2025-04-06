@@ -47,6 +47,13 @@ emergency_agent = EmergencyAgent()
 caregiver_agent = CaregiverAgent()
 
 # -------------------------------------
+# Utility function to check if required columns exist
+# -------------------------------------
+def check_column_exists(df, required_columns):
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    return missing_columns
+
+# -------------------------------------
 # ▶️ Run Simulation Button
 # -------------------------------------
 if st.button("▶️ Run Simulation"):
@@ -81,7 +88,7 @@ if st.button("▶️ Run Simulation"):
     # 💊 Medication Reminders
     with col3:
         st.markdown("### 💊 Medication Reminders")
-        med_reminders = med_agent.check_reminders()
+        med_reminders = med_agent.check_medications()
         if med_reminders:
             st.info("💊 Medication Reminders:")
             for reminder in med_reminders:
@@ -92,41 +99,6 @@ if st.button("▶️ Run Simulation"):
 
     st.success("✅ Simulation complete.")
 
-    st.markdown("### ⏰ Today's Medication Schedule")
-
-    # Clean column names to avoid whitespace issues
-    reminder_df.columns = reminder_df.columns.str.strip()
-
-    # Drop any unnamed columns (like trailing empty ones)
-    reminder_df = reminder_df.loc[:, ~reminder_df.columns.str.contains('^Unnamed')]
-
-    # Debug: Display column names to verify
-    # st.write("📋 Columns in Reminder CSV:", reminder_df.columns.tolist())
-
-    try:
-        # Convert Scheduled Time to datetime
-        reminder_df["Scheduled Time"] = pd.to_datetime(reminder_df["Scheduled Time"], format="%H:%M:%S")
-    except Exception as e:
-        st.error(f"❌ Error converting time: {e}")
-    else:
-        sorted_df = reminder_df.sort_values("Scheduled Time")
-
-        fig = px.timeline(
-            sorted_df,
-            x_start=sorted_df["Scheduled Time"],
-            x_end=sorted_df["Scheduled Time"],
-            y="Reminder Type",
-            color="Reminder Type",
-            labels={"Reminder Type": "Medicine"},
-            title="Medication Schedule Timeline"
-        )
-
-        fig.update_yaxes(categoryorder="total ascending")
-        fig.update_layout(height=400, showlegend=False)
-
-        st.plotly_chart(fig, use_container_width=True)
-
-
 else:
     st.info("Click the button above to start the AI assistant simulation.")
 
@@ -134,36 +106,43 @@ st.markdown("---")
 st.markdown("## 📈 Health Vitals Trends")
 
 if st.checkbox("📊 Show Vitals Charts", value=True):
-    st.markdown("### Heart Rate Over Time")
-    st.altair_chart(
-        alt.Chart(health_agent.data).mark_line().encode(
-            x='Timestamp:T',
-            y='Heart Rate:Q',
-            tooltip=['Timestamp', 'Heart Rate']
-        ).properties(width=700, height=300),
-        use_container_width=True
-    )
+    # Check for missing columns before plotting
+    missing_columns = check_column_exists(health_agent.data, ['Heart Rate', 'Glucose Levels', 'Oxygen Saturation (SpO₂%)', 'Timestamp'])
 
-    st.markdown("### Glucose Levels Over Time")
-    st.altair_chart(
-        alt.Chart(health_agent.data).mark_line(color='orange').encode(
-            x='Timestamp:T',
-            y='Glucose Levels:Q',
-            tooltip=['Timestamp', 'Glucose Levels']
-        ).properties(width=700, height=300),
-        use_container_width=True
-    )
+    if not missing_columns:
+        st.markdown("### Heart Rate Over Time")
+        st.altair_chart(
+            alt.Chart(health_agent.data).mark_line().encode(
+                x='Timestamp:T',
+                y='Heart Rate:Q',
+                tooltip=['Timestamp', 'Heart Rate']
+            ).properties(width=700, height=300),
+            use_container_width=True
+        )
 
-    st.markdown("### SpO₂ Levels Over Time")
-    st.altair_chart(
-        alt.Chart(health_agent.data).mark_line(color='green').encode(
-            x='Timestamp:T',
-            y='Oxygen Saturation (SpO₂%):Q',
-            tooltip=['Timestamp', 'Oxygen Saturation (SpO₂%)']
-        ).properties(width=700, height=300),
-        use_container_width=True
-    )
+        st.markdown("### Glucose Levels Over Time")
+        st.altair_chart(
+            alt.Chart(health_agent.data).mark_line(color='orange').encode(
+                x='Timestamp:T',
+                y='Glucose Levels:Q',
+                tooltip=['Timestamp', 'Glucose Levels']
+            ).properties(width=700, height=300),
+            use_container_width=True
+        )
 
+        st.markdown("### SpO₂ Levels Over Time")
+        st.altair_chart(
+            alt.Chart(health_agent.data).mark_line(color='green').encode(
+                x='Timestamp:T',
+                y='Oxygen Saturation (SpO₂%):Q',
+                tooltip=['Timestamp', 'Oxygen Saturation (SpO₂%)']
+            ).properties(width=700, height=300),
+            use_container_width=True
+        )
+    else:
+        for column in missing_columns:
+            st.warning(f"⚠️ Missing required column: {column} for the health vitals charts.")
+        
 st.markdown("---")
 st.markdown(
     """
@@ -173,4 +152,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
